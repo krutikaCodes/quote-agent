@@ -270,82 +270,69 @@ import subprocess
 import sys
 import base64
 
-
 from flask import Flask, request, jsonify
-from flask import send_file
 
 app = Flask(__name__)
+
 APP_DIR = Path(__file__).resolve().parent
 INPUT_DIR = APP_DIR / "Input"
 OUTPUT_FILE = APP_DIR / "Output" / "Final.xlsx"
 
-@app.route("/test")
-def test():
-    return "Flask is working"
-
 
 @app.route("/", methods=["GET"])
 def index():
-    return """
-    <!doctype html>
-    <html lang="en">
-      <head><meta charset="utf-8"><title>Generate quote</title></head>
-      <body>
-        <h1>Generate quote</h1>
-        <form action="/generate" method="post" enctype="multipart/form-data">
-          <label>Services PDF <input type="file" name="services" accept=".pdf" required></label>
-          <br>
-          <label>Standard spreadsheet <input type="file" name="standard" accept=".xlsx" required></label>
-          <br>
-          <button type="submit">Generate</button>
-        </form>
-      </body>
-    </html>
-    """
+    return "Quote Agent API Running"
 
 
 @app.route("/generate", methods=["POST"])
 def generate():
+    try:
+        data = request.get_json()
 
-    services_content = request.json["services"]
-    standard_content = request.json["standard"]
+        services_content = data["services"]
+        standard_content = data["standard"]
 
-    INPUT_DIR.mkdir(exist_ok=True)
-    OUTPUT_FILE.parent.mkdir(exist_ok=True)
+        INPUT_DIR.mkdir(exist_ok=True)
+        OUTPUT_FILE.parent.mkdir(exist_ok=True)
 
-    services_path = INPUT_DIR / "Services.pdf"
-    standard_path = INPUT_DIR / "Standard.xlsx"
+        services_path = INPUT_DIR / "Services.pdf"
+        standard_path = INPUT_DIR / "Standard.xlsx"
 
-    with open(services_path, "wb") as f:
-        f.write(base64.b64decode(services_content))
+        # Decode incoming Base64 files
+        with open(services_path, "wb") as f:
+            f.write(base64.b64decode(services_content))
 
-    with open(standard_path, "wb") as f:
-        f.write(base64.b64decode(standard_content))
+        with open(standard_path, "wb") as f:
+            f.write(base64.b64decode(standard_content))
 
-    result = subprocess.run(
-        [
-            sys.executable,
-            str(APP_DIR / "generate_final.py"),
-            str(services_path),
-            str(standard_path),
-            str(OUTPUT_FILE),
-        ],
-        cwd=APP_DIR,
-        capture_output=True,
-        text=True,
-    )
+        # Run your existing script
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(APP_DIR / "generate_final.py"),
+                str(services_path),
+                str(standard_path),
+                str(OUTPUT_FILE),
+            ],
+            cwd=APP_DIR,
+            capture_output=True,
+            text=True,
+        )
 
-    if result.returncode != 0:
+        if result.returncode != 0:
+            return jsonify({
+                "error": "Generation failed",
+                "details": result.stderr or result.stdout
+            }), 500
+
+        # Convert generated file back to Base64
+        with open(OUTPUT_FILE, "rb") as f:
+            file_b64 = base64.b64encode(f.read()).decode()
+
         return jsonify({
-            "error": result.stderr
-        }), 500
+            "file": file_b64
+        })
 
-    with open(OUTPUT_FILE, "rb") as f:
-        output_b64 = base64.b64encode(f.read()).decode()
-
-    return jsonify({
-        "file": output_b64
-    })
-
-if __name__ == "__main__":
-    app.run()
+    except Exception as e:
+        return jsonify({
+   
