@@ -128,12 +128,12 @@ def generate():
 
         if not services_content:
             return jsonify({
-                "error": "services is empty"
+                "error": "services file missing"
             }), 400
 
         if not standard_content:
             return jsonify({
-                "error": "standard is empty"
+                "error": "standard file missing"
             }), 400
 
         INPUT_DIR.mkdir(exist_ok=True)
@@ -142,12 +142,13 @@ def generate():
         services_path = INPUT_DIR / "Services.pdf"
         standard_path = INPUT_DIR / "Standard.xlsx"
 
-        # Save incoming content directly
-        with open(services_path, "wb") as f:
-            f.write(services_content.encode("latin-1"))
+        # Save PDF exactly as received
+        with open(services_path, "w", encoding="latin-1") as f:
+            f.write(services_content)
 
-        with open(standard_path, "wb") as f:
-            f.write(standard_content.encode("latin-1"))
+        # Save Excel exactly as received
+        with open(standard_path, "w", encoding="latin-1") as f:
+            f.write(standard_content)
 
         result = subprocess.run(
             [
@@ -157,26 +158,16 @@ def generate():
                 str(standard_path),
                 str(OUTPUT_FILE)
             ],
+            cwd=APP_DIR,
             capture_output=True,
-            text=True,
-            cwd=APP_DIR
+            text=True
         )
 
-        if result.returncode != 0:
-            return jsonify({
-                "error": "generate_final.py failed",
-                "stdout": result.stdout,
-                "stderr": result.stderr
-            }), 500
-
-        if not OUTPUT_FILE.exists():
-            return jsonify({
-                "error": "Final.xlsx not created"
-            }), 500
-
         return jsonify({
-            "status": "success",
-            "message": "Final.xlsx created"
+            "returncode": result.returncode,
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+            "output_exists": OUTPUT_FILE.exists()
         })
 
     except Exception as e:
