@@ -129,11 +129,11 @@ def generate():
         INPUT_DIR.mkdir(exist_ok=True)
         OUTPUT_DIR.mkdir(exist_ok=True)
 
-        # Save uploaded PDF
+        # Save PDF
         with open(SERVICES_FILE, "wb") as f:
             f.write(base64.b64decode(services_content))
 
-        # Save uploaded Excel
+        # Save Excel
         with open(STANDARD_FILE, "wb") as f:
             f.write(base64.b64decode(standard_content))
 
@@ -161,14 +161,9 @@ def generate():
                 "error": "Final.xlsx was not created"
             }), 500
 
-        # Convert output Excel to Base64
-        with open(OUTPUT_FILE, "rb") as f:
-            file_base64 = base64.b64encode(f.read()).decode("utf-8")
-
         return jsonify({
-            "message": "success",
-            "file_size": len(file_base64)
-            # "file_base64": file_base64
+            "message": "output_created",
+            "output_size": OUTPUT_FILE.stat().st_size
         })
 
     except Exception as e:
@@ -184,3 +179,4 @@ def home():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
+
