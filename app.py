@@ -130,12 +130,22 @@ def generate():
         OUTPUT_DIR.mkdir(exist_ok=True)
 
         # Save PDF
+        if str(services_content).startswith("%PDF"):
+            pdf_bytes = services_content.encode("latin1")
+        else:
+            pdf_bytes = base64.b64decode(services_content)
+        
         with open(SERVICES_FILE, "wb") as f:
-            f.write(base64.b64decode(services_content))
-
+            f.write(pdf_bytes)
+        
         # Save Excel
+        if str(standard_content).startswith("PK"):
+            excel_bytes = standard_content.encode("latin1")
+        else:
+            excel_bytes = base64.b64decode(standard_content)
+        
         with open(STANDARD_FILE, "wb") as f:
-            f.write(base64.b64decode(standard_content))
+            f.write(excel_bytes)
 
         # Run generate_final.py
         result = subprocess.run(
