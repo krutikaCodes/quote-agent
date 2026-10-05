@@ -97,6 +97,7 @@
 from pathlib import Path
 import subprocess
 import sys
+import base64
 
 from flask import Flask, request, jsonify
 
@@ -112,14 +113,30 @@ OUTPUT_FILE = OUTPUT_DIR / "Final.xlsx"
 def home():
     return "Quote Agent API Running"
 
+
 @app.route("/generate", methods=["POST"])
 def generate():
     try:
 
         data = request.get_json()
 
-        services = data["services"]
-        standard = data["standard"]
+        if not data:
+            return jsonify({
+                "error": "No JSON received"
+            }), 400
+
+        services_b64 = data.get("services")
+        standard_b64 = data.get("standard")
+
+        if not services_b64:
+            return jsonify({
+                "error": "services missing"
+            }), 400
+
+        if not standard_b64:
+            return jsonify({
+                "error": "standard missing"
+            }), 400
 
         INPUT_DIR.mkdir(exist_ok=True)
         OUTPUT_DIR.mkdir(exist_ok=True)
@@ -127,11 +144,13 @@ def generate():
         services_path = INPUT_DIR / "Services.pdf"
         standard_path = INPUT_DIR / "Standard.xlsx"
 
-        with open(services_path, "w", encoding="utf-8", errors="ignore") as f:
-            f.write(services)
+        # Save PDF
+        with open(services_path, "wb") as f:
+            f.write(base64.b64decode(services_b64))
 
-        with open(standard_path, "w", encoding="utf-8", errors="ignore") as f:
-            f.write(standard)
+        # Save Excel
+        with open(standard_path, "wb") as f:
+            f.write(base64.b64decode(standard_b64))
 
         result = subprocess.run(
             [
@@ -146,78 +165,24 @@ def generate():
             cwd=APP_DIR
         )
 
-        return jsonify({
-            "returncode": result.returncode,
-            "stdout": result.stdout,
-            "stderr": result.stderr,
-            "output_exists": OUTPUT_FILE.exists()
-        })
-
-    except Exception as e:
-        import traceback
-
-        return jsonify({
-            "error": str(e),
-            "traceback": traceback.format_exc()
-        }), 500
-
-
-
-@app.route("/generatee", methods=["POST"])
-def generatee():
-    try:
-        data = request.get_json()
-
-        if not data:
+        if result.returncode != 0:
             return jsonify({
-                "error": "No JSON received"
-            }), 400
+                "error": "generate_final.py failed",
+                "stdout": result.stdout,
+                "stderr": result.stderr
+            }), 500
 
-        services_content = data.get("services")
-        standard_content = data.get("standard")
-
-        if not services_content:
+        if not OUTPUT_FILE.exists():
             return jsonify({
-                "error": "services file missing"
-            }), 400
+                "error": "Final.xlsx was not created"
+            }), 500
 
-        if not standard_content:
-            return jsonify({
-                "error": "standard file missing"
-            }), 400
-
-        INPUT_DIR.mkdir(exist_ok=True)
-        OUTPUT_DIR.mkdir(exist_ok=True)
-
-        services_path = INPUT_DIR / "Services.pdf"
-        standard_path = INPUT_DIR / "Standard.xlsx"
-
-        # Save PDF exactly as received
-        with open(services_path, "w", encoding="latin-1") as f:
-            f.write(services_content)
-
-        # Save Excel exactly as received
-        with open(standard_path, "w", encoding="latin-1") as f:
-            f.write(standard_content)
-
-        result = subprocess.run(
-            [
-                sys.executable,
-                str(APP_DIR / "generate_final.py"),
-                str(services_path),
-                str(standard_path),
-                str(OUTPUT_FILE)
-            ],
-            cwd=APP_DIR,
-            capture_output=True,
-            text=True
-        )
+        with open(OUTPUT_FILE, "rb") as f:
+            output_b64 = base64.b64encode(f.read()).decode("utf-8")
 
         return jsonify({
-            "returncode": result.returncode,
-            "stdout": result.stdout,
-            "stderr": result.stderr,
-            "output_exists": OUTPUT_FILE.exists()
+            "status": "success",
+            "file": output_b64
         })
 
     except Exception as e:
