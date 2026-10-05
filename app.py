@@ -131,12 +131,11 @@ def generate():
 
         # Save uploaded PDF
         with open(SERVICES_FILE, "wb") as f:
-             f.write(base64.b64decode(services_content))
+            f.write(base64.b64decode(services_content))
 
         # Save uploaded Excel
         with open(STANDARD_FILE, "wb") as f:
             f.write(base64.b64decode(standard_content))
-       
 
         # Run generate_final.py
         result = subprocess.run(
@@ -151,19 +150,24 @@ def generate():
             text=True
         )
 
-    
+        if result.returncode != 0:
+            return jsonify({
+                "error": result.stderr,
+                "stdout": result.stdout
+            }), 500
+
         if not OUTPUT_FILE.exists():
             return jsonify({
-            "error": "Final.xlsx was not created"
+                "error": "Final.xlsx was not created"
             }), 500
-    
+
+        # Convert output Excel to Base64
         with open(OUTPUT_FILE, "rb") as f:
             file_base64 = base64.b64encode(f.read()).decode("utf-8")
 
         return jsonify({
             "file_base64": file_base64
         })
-
 
     except Exception as e:
         return jsonify({
