@@ -112,9 +112,27 @@ SERVICES_FILE = INPUT_DIR / "Services.pdf"
 STANDARD_FILE = INPUT_DIR / "Standard.xlsx"
 OUTPUT_FILE = OUTPUT_DIR / "Final.xlsx"
 
-
 @app.route("/generate", methods=["POST"])
 def generate():
+    try:
+        data = request.get_json()
+
+        services_b64 = data.get("services")
+        standard_b64 = data.get("standard")
+
+        return jsonify({
+            "services_start": services_b64[:20],
+            "standard_start": standard_b64[:20]
+        })
+
+    except Exception as e:
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+
+@app.route("/generatec", methods=["POST"])
+def generatec():
     try:
         data = request.get_json()
 
@@ -136,6 +154,8 @@ def generate():
         # Save Excel
         with open(STANDARD_FILE, "wb") as f:
             f.write(base64.b64decode(standard_b64))
+
+        
 
         # Run processing script
         result = subprocess.run(
