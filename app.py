@@ -151,14 +151,19 @@ def generate():
             text=True
         )
 
+    
+        if not OUTPUT_FILE.exists():
+            return jsonify({
+            "error": "Final.xlsx was not created"
+            }), 500
+    
+        with open(OUTPUT_FILE, "rb") as f:
+            file_base64 = base64.b64encode(f.read()).decode("utf-8")
+
         return jsonify({
-            "returncode": result.returncode,
-            "stdout": result.stdout,
-            "stderr": result.stderr,
-            "services_exists": SERVICES_FILE.exists(),
-            "standard_exists": STANDARD_FILE.exists(),
-            "output_exists": OUTPUT_FILE.exists()
+            "file_base64": file_base64
         })
+
 
     except Exception as e:
         return jsonify({
