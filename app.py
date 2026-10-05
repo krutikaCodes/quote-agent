@@ -114,9 +114,21 @@ def home():
 
 @app.route("/generate", methods=["POST"])
 def generate():
-    return jsonify({
-        "status": "success"
-    })
+    try:
+        data = request.get_json()
+
+        return jsonify({
+            "received": True,
+            "services_present": "services" in data,
+            "standard_present": "standard" in data,
+            "services_length": len(data.get("services", "")),
+            "standard_length": len(data.get("standard", ""))
+        })
+
+    except Exception as e:
+        return jsonify({
+            "error": str(e)
+        }), 500
 
 
 @app.route("/generatee", methods=["POST"])
