@@ -139,8 +139,14 @@ def generate():
             f.write(standard_content.encode("latin1"))
 
         # Run your processing script
-        result = subprocess.run(
-            [sys.executable, "generate_final.py"],
+       result = subprocess.run(
+            [
+                sys.executable,
+                "generate_final.py",
+                str(SERVICES_FILE),
+                str(STANDARD_FILE),
+                str(OUTPUT_FILE)
+            ],
             capture_output=True,
             text=True
         )
