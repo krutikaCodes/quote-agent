@@ -166,7 +166,9 @@ def generate():
             file_base64 = base64.b64encode(f.read()).decode("utf-8")
 
         return jsonify({
-            "file_base64": file_base64
+            "message": "success",
+            "file_size": len(file_base64)
+            # "file_base64": file_base64
         })
 
     except Exception as e:
