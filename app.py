@@ -120,7 +120,7 @@ def generate():
 
 
 @app.route("/generatee", methods=["POST"])
-def generate():
+def generatee():
     try:
         data = request.get_json()
 
