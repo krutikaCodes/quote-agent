@@ -120,15 +120,21 @@ def generate():
         services = data["services"]
         standard = data["standard"]
 
+        with open("services.txt", "w", encoding="utf-8", errors="ignore") as f:
+            f.write(services)
+
+        with open("standard.txt", "w", encoding="utf-8", errors="ignore") as f:
+            f.write(standard)
+
         return jsonify({
-            "services_start": services[:20],
-            "standard_start": standard[:20]
+            "status": "saved"
         })
 
     except Exception as e:
         return jsonify({
             "error": str(e)
         }), 500
+``
 
 
 @app.route("/generatee", methods=["POST"])
