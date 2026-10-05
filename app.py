@@ -97,6 +97,7 @@
 from pathlib import Path
 import subprocess
 import sys
+import base64
 
 from flask import Flask, request, jsonify
 
@@ -130,11 +131,12 @@ def generate():
 
         # Save uploaded PDF
         with open(SERVICES_FILE, "wb") as f:
-            f.write(services_content.encode("latin1"))
+             f.write(base64.b64decode(services_content)
 
         # Save uploaded Excel
         with open(STANDARD_FILE, "wb") as f:
-            f.write(standard_content.encode("latin1"))
+            f.write(base64.b64decode(standard_content))
+       
 
         # Run generate_final.py
         result = subprocess.run(
