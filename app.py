@@ -116,13 +116,30 @@ def home():
 def generate():
     try:
 
+        data = request.get_json()
+
+        services = data["services"]
+        standard = data["standard"]
+
+        INPUT_DIR.mkdir(exist_ok=True)
+        OUTPUT_DIR.mkdir(exist_ok=True)
+
+        services_path = INPUT_DIR / "Services.pdf"
+        standard_path = INPUT_DIR / "Standard.xlsx"
+
+        with open(services_path, "w", encoding="utf-8", errors="ignore") as f:
+            f.write(services)
+
+        with open(standard_path, "w", encoding="utf-8", errors="ignore") as f:
+            f.write(standard)
+
         result = subprocess.run(
             [
                 sys.executable,
                 str(APP_DIR / "generate_final.py"),
-                "a.pdf",
-                "b.xlsx",
-                "c.xlsx"
+                str(services_path),
+                str(standard_path),
+                str(OUTPUT_FILE)
             ],
             capture_output=True,
             text=True,
@@ -132,12 +149,16 @@ def generate():
         return jsonify({
             "returncode": result.returncode,
             "stdout": result.stdout,
-            "stderr": result.stderr
+            "stderr": result.stderr,
+            "output_exists": OUTPUT_FILE.exists()
         })
 
     except Exception as e:
+        import traceback
+
         return jsonify({
-            "error": str(e)
+            "error": str(e),
+            "traceback": traceback.format_exc()
         }), 500
 
 
