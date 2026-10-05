@@ -94,11 +94,9 @@
 # if __name__ == "__main__":
 #     app.run(host="0.0.0.0", port=5000)
 
-
 from pathlib import Path
 import subprocess
 import sys
-import base64
 
 from flask import Flask, request, jsonify
 
@@ -138,8 +136,8 @@ def generate():
         with open(STANDARD_FILE, "wb") as f:
             f.write(standard_content.encode("latin1"))
 
-        # Run your processing script
-       result = subprocess.run(
+        # Run generate_final.py
+        result = subprocess.run(
             [
                 sys.executable,
                 "generate_final.py",
