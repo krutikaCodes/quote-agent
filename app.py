@@ -117,12 +117,14 @@ def generate():
     try:
         data = request.get_json()
 
+        with open("test.pdf", "w", encoding="latin-1") as f:
+            f.write(data["services"])
+
+        with open("test.xlsx", "w", encoding="latin-1") as f:
+            f.write(data["standard"])
+
         return jsonify({
-            "received": True,
-            "services_present": "services" in data,
-            "standard_present": "standard" in data,
-            "services_length": len(data.get("services", "")),
-            "standard_length": len(data.get("standard", ""))
+            "status": "files_written"
         })
 
     except Exception as e:
