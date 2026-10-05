@@ -94,6 +94,7 @@
 # if __name__ == "__main__":
 #     app.run(host="0.0.0.0", port=5000)
 
+
 from pathlib import Path
 import subprocess
 import sys
@@ -112,24 +113,51 @@ SERVICES_FILE = INPUT_DIR / "Services.pdf"
 STANDARD_FILE = INPUT_DIR / "Standard.xlsx"
 OUTPUT_FILE = OUTPUT_DIR / "Final.xlsx"
 
+
 @app.route("/generate", methods=["POST"])
 def generate():
     try:
         data = request.get_json()
 
-        services_b64 = data.get("services")
-        standard_b64 = data.get("standard")
+        services_content = data.get("services")
+        standard_content = data.get("standard")
+
+        if not services_content or not standard_content:
+            return jsonify({
+                "error": "Missing services or standard file"
+            }), 400
+
+        INPUT_DIR.mkdir(exist_ok=True)
+        OUTPUT_DIR.mkdir(exist_ok=True)
+
+        # Save uploaded PDF
+        with open(SERVICES_FILE, "wb") as f:
+            f.write(services_content.encode("latin1"))
+
+        # Save uploaded Excel
+        with open(STANDARD_FILE, "wb") as f:
+            f.write(standard_content.encode("latin1"))
+
+        # Run your processing script
+        result = subprocess.run(
+            [sys.executable, "generate_final.py"],
+            capture_output=True,
+            text=True
+        )
 
         return jsonify({
-            "services_start": services_b64[:20],
-            "standard_start": standard_b64[:20]
+            "returncode": result.returncode,
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+            "services_exists": SERVICES_FILE.exists(),
+            "standard_exists": STANDARD_FILE.exists(),
+            "output_exists": OUTPUT_FILE.exists()
         })
 
     except Exception as e:
         return jsonify({
             "error": str(e)
         }), 500
-
 
 
 @app.route("/", methods=["GET"])
