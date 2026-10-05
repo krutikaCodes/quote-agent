@@ -134,7 +134,7 @@ def generate():
         return jsonify({
             "error": str(e)
         }), 500
-``
+
 
 
 @app.route("/generatee", methods=["POST"])
