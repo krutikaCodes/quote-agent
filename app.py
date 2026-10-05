@@ -112,8 +112,14 @@ OUTPUT_FILE = OUTPUT_DIR / "Final.xlsx"
 def home():
     return "Quote Agent API Running"
 
-
 @app.route("/generate", methods=["POST"])
+def generate():
+    return jsonify({
+        "status": "success"
+    })
+
+
+@app.route("/generatee", methods=["POST"])
 def generate():
     try:
         data = request.get_json()
