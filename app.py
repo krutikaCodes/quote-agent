@@ -104,20 +104,63 @@ from flask import Flask, request, jsonify
 app = Flask(__name__)
 
 APP_DIR = Path(__file__).resolve().parent
+
 INPUT_DIR = APP_DIR / "Input"
 OUTPUT_DIR = APP_DIR / "Output"
+
+SERVICES_FILE = INPUT_DIR / "Services.pdf"
+STANDARD_FILE = INPUT_DIR / "Standard.xlsx"
 OUTPUT_FILE = OUTPUT_DIR / "Final.xlsx"
+
+
 @app.route("/generate", methods=["POST"])
 def generate():
     try:
         data = request.get_json()
 
-        services = data.get("services", "")
-        standard = data.get("standard", "")
+        services_b64 = data.get("services")
+        standard_b64 = data.get("standard")
+
+        if not services_b64 or not standard_b64:
+            return jsonify({
+                "error": "Upload both a services PDF and a standard spreadsheet."
+            }), 400
+
+        INPUT_DIR.mkdir(exist_ok=True)
+        OUTPUT_DIR.mkdir(exist_ok=True)
+
+        # Save PDF
+        with open(SERVICES_FILE, "wb") as f:
+            f.write(base64.b64decode(services_b64))
+
+        # Save Excel
+        with open(STANDARD_FILE, "wb") as f:
+            f.write(base64.b64decode(standard_b64))
+
+        # Run processing script
+        result = subprocess.run(
+            [sys.executable, "generate_final.py"],
+            capture_output=True,
+            text=True
+        )
+
+        if result.returncode != 0:
+            return jsonify({
+                "error": result.stderr,
+                "stdout": result.stdout
+            }), 500
+
+        if not OUTPUT_FILE.exists():
+            return jsonify({
+                "error": "Final.xlsx was not created."
+            }), 500
+
+        # Return output file as base64
+        with open(OUTPUT_FILE, "rb") as f:
+            file_base64 = base64.b64encode(f.read()).decode("utf-8")
 
         return jsonify({
-            "services_first_50": services[:50],
-            "standard_first_50": standard[:50]
+            "file_base64": file_base64
         })
 
     except Exception as e:
@@ -125,13 +168,11 @@ def generate():
             "error": str(e)
         }), 500
 
+
 @app.route("/", methods=["GET"])
 def home():
     return "Quote Agent API Running"
 
 
-
-
-
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=10000)
