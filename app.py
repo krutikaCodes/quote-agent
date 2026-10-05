@@ -131,7 +131,7 @@ def generate():
 
         # Save uploaded PDF
         with open(SERVICES_FILE, "wb") as f:
-             f.write(base64.b64decode(services_content)
+             f.write(base64.b64decode(services_content))
 
         # Save uploaded Excel
         with open(STANDARD_FILE, "wb") as f:
