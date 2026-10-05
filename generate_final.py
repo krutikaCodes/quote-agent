@@ -24,7 +24,6 @@ def read_services_pdf(pdf_file):
                 if len(table) < 2:
                     continue
 
-                # Skip header row
                 for row in table[1:]:
 
                     try:
@@ -49,7 +48,7 @@ def read_services_pdf(pdf_file):
                             "Unit Price": unit_price
                         })
 
-                    except Exception as e:
+                    except Exception:
                         print(f"Skipping row: {row}")
                         continue
 
@@ -78,6 +77,16 @@ def read_standard_excel(excel_file):
         "Unit Cost"
     ]
 
+    missing = [
+        col for col in required_columns
+        if col not in df.columns
+    ]
+
+    if missing:
+        raise ValueError(
+            f"Missing required columns: {missing}"
+        )
+
     return df[required_columns]
 
 
@@ -102,24 +111,24 @@ def create_output(
     )
 
     final_df["Ext. Price"] = (
-        final_df["Qty"] *
-        final_df["Unit Price"]
+        final_df["Qty"]
+        * final_df["Unit Price"]
     )
 
     final_df["Ext. Cost"] = (
-        final_df["Qty"] *
-        final_df["Unit Cost"]
+        final_df["Qty"]
+        * final_df["Unit Cost"]
     )
 
     final_df["Margin $"] = (
-        final_df["Ext. Price"] -
-        final_df["Ext. Cost"]
+        final_df["Ext. Price"]
+        - final_df["Ext. Cost"]
     )
 
     final_df["Margin %"] = (
-        final_df["Margin $"] /
-        final_df["Ext. Price"]
-    )
+        final_df["Margin $"]
+        / final_df["Ext. Price"]
+    ).fillna(0)
 
     return final_df
 
@@ -132,8 +141,8 @@ def add_totals_row(final_df):
 
     if total_price > 0:
         total_margin_pct = (
-            total_margin /
-            total_price
+            total_margin
+            / total_price
         )
     else:
         total_margin_pct = 0
@@ -169,98 +178,4 @@ def write_excel(
         engine="openpyxl"
     ) as writer:
 
-        final_df.to_excel(
-            writer,
-            sheet_name="Final Output",
-            index=False
-        )
-
-        worksheet = writer.sheets[
-            "Final Output"
-        ]
-
-        # Format Margin %
-        for row in range(
-            2,
-            len(final_df) + 2
-        ):
-            worksheet[f"H{row}"].number_format = "0.00%"
-
-        # Autosize columns
-        for column in worksheet.columns:
-
-            max_length = 0
-            letter = column[0].column_letter
-
-            for cell in column:
-
-                try:
-                    max_length = max(
-                        max_length,
-                        len(str(cell.value))
-                    )
-                except:
-                    pass
-
-            worksheet.column_dimensions[
-                letter
-            ].width = max_length + 3
-
-
-def main():
-
-    if len(sys.argv) != 4:
-
-        print(
-            "Usage:\n"
-            "python generate_final.py "
-            "<services.pdf> "
-            "<standard.xlsx> "
-            "<output.xlsx>"
-        )
-
-        sys.exit(1)
-
-    pdf_file = sys.argv[1]
-    standard_file = sys.argv[2]
-    output_file = sys.argv[3]
-
-    print("Reading PDF...")
-    services_df = read_services_pdf(
-        pdf_file
-    )
-
-    print("Reading Standard.xlsx...")
-    standard_df = read_standard_excel(
-        standard_file
-    )
-
-    print("Calculating...")
-    final_df = create_output(
-        services_df,
-        standard_df
-    )
-
-    final_df = add_totals_row(
-        final_df
-    )
-
-    os.makedirs(
-        os.path.dirname(output_file),
-        exist_ok=True
-    )
-
-    print("Writing Final.xlsx...")
-    write_excel(
-        final_df,
-        output_file
-    )
-
-    print(
-        "\nSUCCESS\n"
-        f"Output File: {output_file}"
-    )
-
-
-if __name__ == "__main__":
-    main()
+     
