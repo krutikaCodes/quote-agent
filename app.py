@@ -115,19 +115,24 @@ def home():
 @app.route("/generate", methods=["POST"])
 def generate():
     try:
-        data = request.get_json()
 
-        services = data["services"]
-        standard = data["standard"]
-
-        with open("services.txt", "w", encoding="utf-8", errors="ignore") as f:
-            f.write(services)
-
-        with open("standard.txt", "w", encoding="utf-8", errors="ignore") as f:
-            f.write(standard)
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(APP_DIR / "generate_final.py"),
+                "a.pdf",
+                "b.xlsx",
+                "c.xlsx"
+            ],
+            capture_output=True,
+            text=True,
+            cwd=APP_DIR
+        )
 
         return jsonify({
-            "status": "saved"
+            "returncode": result.returncode,
+            "stdout": result.stdout,
+            "stderr": result.stderr
         })
 
     except Exception as e:
